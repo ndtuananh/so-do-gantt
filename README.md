@@ -3,6 +3,8 @@
 Dashboard theo dõi tiến độ gia công các dự án tại Xưởng AH9, đồng bộ dữ liệu
 từ Google Sheet. Next.js (App Router) + Supabase + Vercel Cron.
 
+Deploy tự động qua GitHub → Vercel: mỗi lần push lên nhánh `main`, Vercel tự build và deploy.
+
 ## Kiến trúc
 
 - **Next.js 16** (App Router, TypeScript, Tailwind) — giao diện Server + Client Components.
