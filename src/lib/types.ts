@@ -14,8 +14,18 @@ export type GanttItem = {
   khoi_luong_chua_gia_cong: number | null;
   ngay_bat_dau: string | null; // ISO date
   ngay_ket_thuc: string | null; // ISO date
+  rap_tho_khoi_luong_con_lai: number | null;
+  han_tho_khoi_luong_con_lai: number | null;
   raw: Record<string, string>;
   updated_at: string;
+};
+
+export type StageProgress = {
+  key: string;
+  label: string;
+  percent: number; // 0-100
+  daDat: number;
+  tong: number;
 };
 
 export type ProjectGroup = {

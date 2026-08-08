@@ -2,7 +2,14 @@
 
 import { Fragment, useMemo, useState } from "react";
 import type { GanttItem } from "@/lib/types";
-import { groupByProject, buildTimelineScale, barStyle, formatDate, formatNumber } from "@/lib/timeline";
+import {
+  groupByProject,
+  buildTimelineScale,
+  barStyle,
+  formatDate,
+  formatNumber,
+  computeStageProgress,
+} from "@/lib/timeline";
 import { statusMeta, STATUS_LEGEND } from "@/lib/status";
 
 function normalize(s: string): string {
@@ -113,7 +120,7 @@ export default function GanttBoard({ items }: { items: GanttItem[] }) {
 
               {!isCollapsed &&
                 group.items.map((item) => {
-                  const status = statusMeta(item.tinh_trang_gia_cong);
+                  const status = statusMeta(item.tinh_trang_gia_cong, item.khoi_luong_chua_gia_cong);
                   const hasDates = item.ngay_bat_dau && item.ngay_ket_thuc;
                   const bar = hasDates
                     ? barStyle(item.ngay_bat_dau as string, item.ngay_ket_thuc as string, scale)
@@ -172,7 +179,7 @@ export default function GanttBoard({ items }: { items: GanttItem[] }) {
                             className="group absolute left-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5"
                           >
                             <span className="h-2 w-2 rounded-full" style={{ background: status.color }} />
-                            <span className="text-[11px] text-[var(--text-secondary)]">{status.label} · chưa có lịch</span>
+                            <span className="text-[11px] text-[var(--text-secondary)]">{status.label} · Chưa có kế hoạch</span>
                           </button>
                         )}
                       </div>
@@ -190,8 +197,10 @@ export default function GanttBoard({ items }: { items: GanttItem[] }) {
 }
 
 function DetailPanel({ item, onClose }: { item: GanttItem; onClose: () => void }) {
-  const status = statusMeta(item.tinh_trang_gia_cong);
+  const status = statusMeta(item.tinh_trang_gia_cong, item.khoi_luong_chua_gia_cong);
   const rawEntries = Object.entries(item.raw ?? {});
+  const hasDates = Boolean(item.ngay_bat_dau && item.ngay_ket_thuc);
+  const stages = computeStageProgress(item);
 
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-black/30" onClick={onClose}>
@@ -209,9 +218,24 @@ function DetailPanel({ item, onClose }: { item: GanttItem; onClose: () => void }
           </button>
         </div>
 
-        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs" style={{ background: status.color + "22", color: status.color }}>
-          <span className="h-2 w-2 rounded-full" style={{ background: status.color }} />
-          {status.label}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs"
+            style={{ background: status.color + "22", color: status.color }}
+          >
+            <span className="h-2 w-2 rounded-full" style={{ background: status.color }} />
+            {status.label}
+          </span>
+          <span
+            className={
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs " +
+              (hasDates
+                ? "bg-[var(--series-1)]/15 text-[var(--series-1)]"
+                : "bg-[var(--chip)] text-[var(--text-secondary)]")
+            }
+          >
+            {hasDates ? "Có kế hoạch" : "Chưa có kế hoạch"}
+          </span>
         </div>
 
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
@@ -232,6 +256,33 @@ function DetailPanel({ item, onClose }: { item: GanttItem; onClose: () => void }
           <dt className="text-[var(--text-secondary)]">Khối lượng còn lại</dt>
           <dd className="text-[var(--text-primary)]">{formatNumber(item.khoi_luong_chua_gia_cong)} tấn</dd>
         </dl>
+
+        {stages.length > 0 && (
+          <div className="mt-5">
+            <h3 className="mb-2 text-sm font-medium text-[var(--text-primary)]">Tiến độ theo công đoạn</h3>
+            <div className="flex flex-col gap-3">
+              {stages.map((s) => {
+                const stageColor = s.percent >= 100 ? "#0ca30c" : "#2a78d6";
+                return (
+                  <div key={s.key}>
+                    <div className="mb-1 flex items-center justify-between text-xs">
+                      <span className="text-[var(--text-primary)]">{s.label}</span>
+                      <span className="text-[var(--text-secondary)]">
+                        {formatNumber(s.daDat)} / {formatNumber(s.tong)} tấn · {s.percent.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--chip)]">
+                      <div
+                        className="h-full rounded-full transition-[width]"
+                        style={{ width: `${s.percent}%`, background: stageColor }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {rawEntries.length > 0 && (
           <details className="mt-5">

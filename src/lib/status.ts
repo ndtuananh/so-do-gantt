@@ -21,7 +21,14 @@ function normalize(s: string): string {
     .toLowerCase();
 }
 
-export function statusMeta(raw: string | null): StatusMeta {
+export function statusMeta(raw: string | null, khoiLuongConLai?: number | null): StatusMeta {
+  // Khối lượng còn lại = 0 is the ground truth for "done" — it can disagree
+  // with the free-text trạng thái column (which lags behind real progress),
+  // so it always wins.
+  if (khoiLuongConLai !== undefined && khoiLuongConLai !== null && khoiLuongConLai <= 0) {
+    return { key: "good", label: "Đã hoàn thành", color: STATUS_COLORS.good };
+  }
+
   const label = (raw ?? "").trim() || "Chưa cập nhật";
   const n = normalize(label);
 

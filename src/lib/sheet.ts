@@ -21,6 +21,8 @@ export type ParsedRow = {
   khoi_luong_chua_gia_cong: number | null;
   ngay_bat_dau: string | null;
   ngay_ket_thuc: string | null;
+  rap_tho_khoi_luong_con_lai: number | null;
+  han_tho_khoi_luong_con_lai: number | null;
   raw: Record<string, string>;
 };
 
@@ -93,7 +95,7 @@ function normalize(s: string): string {
     .trim();
 }
 
-function buildColumnMap(headerRows: string[][]): Map<string, number> {
+function buildHeaderIndex(headerRows: string[][]): string[] {
   // Merge up to 2 header rows so text split across a merged cell (row 2/3
   // in the sheet) still matches, e.g. "KHỐI LƯỢNG" / "BAN HÀNH BẢN VẼ".
   const width = Math.max(...headerRows.map((r) => r.length));
@@ -106,7 +108,10 @@ function buildColumnMap(headerRows: string[][]): Map<string, number> {
         .trim()
     );
   }
+  return combined;
+}
 
+function buildColumnMap(combined: string[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
     let bestCol = -1;
@@ -122,6 +127,23 @@ function buildColumnMap(headerRows: string[][]): Map<string, number> {
     if (bestCol !== -1) map.set(field, bestCol);
   }
   return map;
+}
+
+// The sheet has separate "RÁP THÔ/2D" and "HÀN THÔ/2D" blocks that repeat
+// the exact same sub-column labels ("Khối lượng CÒN LẠI"). Google's CSV
+// export drops merged group-header text on every column but the first, so
+// the group name isn't reliably attachable per column — instead we rely on
+// sheet order: Ráp thô's block always precedes Hàn thô's, so the first
+// "khối lượng còn lại" match is Ráp thô and the second is Hàn thô.
+function findAllColumns(combined: string[], mustInclude: string[]): number[] {
+  const found: number[] = [];
+  for (let col = 0; col < combined.length; col++) {
+    const normalized = normalize(combined[col]);
+    if (mustInclude.every((k) => normalized.includes(normalize(k)))) {
+      found.push(col);
+    }
+  }
+  return found;
 }
 
 function parseNumber(s: string | undefined): number | null {
@@ -165,13 +187,17 @@ export function mapSheetToRows(csvText: string): ParsedRow[] {
   if (headerIdx === -1) headerIdx = 0;
 
   const headerRows = [rows[headerIdx], rows[headerIdx + 1] ?? []];
-  const colMap = buildColumnMap(headerRows);
+  const combined = buildHeaderIndex(headerRows);
+  const colMap = buildColumnMap(combined);
   const dataRows = rows.slice(headerIdx + 2);
 
   const get = (r: string[], field: string): string | undefined => {
     const col = colMap.get(field);
     return col === undefined ? undefined : r[col];
   };
+
+  const khoiLuongConLaiCols = findAllColumns(combined, ["khoi luong", "con lai"]);
+  const [rapThoCol, hanThoCol] = khoiLuongConLaiCols;
 
   const rawHeader = headerRows[0].map((h, i) => h || headerRows[1]?.[i] || `col_${i}`);
 
@@ -210,6 +236,8 @@ export function mapSheetToRows(csvText: string): ParsedRow[] {
       khoi_luong_chua_gia_cong: parseNumber(get(r, "khoi_luong_chua_gia_cong")),
       ngay_bat_dau: parseDate(get(r, "ngay_bat_dau")),
       ngay_ket_thuc: parseDate(get(r, "ngay_ket_thuc")),
+      rap_tho_khoi_luong_con_lai: rapThoCol !== undefined ? parseNumber(r[rapThoCol]) : null,
+      han_tho_khoi_luong_con_lai: hanThoCol !== undefined ? parseNumber(r[hanThoCol]) : null,
       raw,
     });
   }

@@ -1,6 +1,24 @@
-import type { GanttItem, ProjectGroup } from "./types";
+import type { GanttItem, ProjectGroup, StageProgress } from "./types";
 
 const DAY_MS = 86_400_000;
+
+export function computeStageProgress(item: GanttItem): StageProgress[] {
+  const tong = item.khoi_luong_ban_hanh ?? 0;
+  const stages: { key: string; label: string; conLai: number | null }[] = [
+    { key: "tong", label: "Tổng gia công", conLai: item.khoi_luong_chua_gia_cong },
+    { key: "rap_tho", label: "Ráp thô / 2D", conLai: item.rap_tho_khoi_luong_con_lai },
+    { key: "han_tho", label: "Hàn thô / 2D", conLai: item.han_tho_khoi_luong_con_lai },
+  ];
+
+  return stages
+    .filter((s) => s.conLai !== null && tong > 0)
+    .map((s) => {
+      const conLai = Math.max(0, Math.min(s.conLai as number, tong));
+      const daDat = tong - conLai;
+      const percent = Math.max(0, Math.min(100, (daDat / tong) * 100));
+      return { key: s.key, label: s.label, percent, daDat, tong };
+    });
+}
 
 export function groupByProject(items: GanttItem[]): ProjectGroup[] {
   const map = new Map<string, ProjectGroup>();

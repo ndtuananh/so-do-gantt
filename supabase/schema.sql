@@ -16,9 +16,16 @@ create table if not exists gantt_items (
   khoi_luong_chua_gia_cong numeric,
   ngay_bat_dau date,
   ngay_ket_thuc date,
+  rap_tho_khoi_luong_con_lai numeric,
+  han_tho_khoi_luong_con_lai numeric,
   raw jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- Safe to re-run: adds the two công đoạn columns if this table already
+-- existed from an earlier version of schema.sql.
+alter table gantt_items add column if not exists rap_tho_khoi_luong_con_lai numeric;
+alter table gantt_items add column if not exists han_tho_khoi_luong_con_lai numeric;
 
 create index if not exists gantt_items_ten_du_an_idx on gantt_items (ten_du_an);
 create index if not exists gantt_items_dates_idx on gantt_items (ngay_bat_dau, ngay_ket_thuc);
