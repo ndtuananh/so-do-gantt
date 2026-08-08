@@ -14,7 +14,7 @@ import {
 } from "@/lib/timeline";
 import { statusMeta, STATUS_LEGEND } from "@/lib/status";
 
-const LABEL_WIDTH = 260;
+const LABEL_WIDTH = 380;
 const LANE_HEIGHT = 16;
 const LANE_GAP = 3;
 
@@ -161,11 +161,14 @@ export default function GanttBoard({ items }: { items: GanttItem[] }) {
                   className="flex w-full items-stretch text-left hover:opacity-90"
                 >
                   <div
-                    className="sticky left-0 z-10 flex shrink-0 items-center gap-2 bg-[var(--page)] px-4 py-2.5"
+                    className="sticky left-0 z-10 flex shrink-0 items-start gap-2 bg-[var(--page)] px-4 py-2.5"
                     style={{ width: LABEL_WIDTH }}
                   >
-                    <span className="text-[var(--text-secondary)]">{isCollapsed ? "▸" : "▾"}</span>
-                    <span className="truncate text-sm font-semibold text-[var(--text-primary)]" title={group.ten_du_an}>
+                    <span className="pt-0.5 text-[var(--text-secondary)]">{isCollapsed ? "▸" : "▾"}</span>
+                    <span
+                      className="line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-snug break-words text-[var(--text-primary)]"
+                      title={group.ten_du_an}
+                    >
                       {group.ten_du_an}
                     </span>
                     {group.ma_code && (
@@ -235,7 +238,10 @@ export default function GanttBoard({ items }: { items: GanttItem[] }) {
                           className="sticky left-0 z-10 flex min-w-0 shrink-0 flex-col gap-0.5 bg-[var(--surface-1)] px-4 py-2 text-left"
                           style={{ width: LABEL_WIDTH }}
                         >
-                          <span className="truncate text-sm text-[var(--text-primary)]" title={item.hang_muc ?? undefined}>
+                          <span
+                            className="line-clamp-2 leading-snug break-words text-sm text-[var(--text-primary)]"
+                            title={item.hang_muc ?? undefined}
+                          >
                             {item.hang_muc || "(chưa đặt tên hạng mục)"}
                           </span>
                           <span className="truncate text-[11px] text-[var(--text-secondary)]">

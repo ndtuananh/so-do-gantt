@@ -26,7 +26,7 @@ export default async function Home() {
   const result = await loadData();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 p-6">
+    <main className="mx-auto flex min-h-screen max-w-[1920px] flex-col gap-6 p-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-[var(--text-primary)]">
