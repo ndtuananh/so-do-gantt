@@ -17,6 +17,7 @@ export type ParsedRow = {
   to_gia_cong: string | null;
   tinh_trang_gia_cong: string | null;
   so_luong_cau_kien: number | null;
+  so_luong_con_lai: number | null;
   khoi_luong_ban_hanh: number | null;
   khoi_luong_chua_gia_cong: number | null;
   ngay_bat_dau: string | null;
@@ -78,6 +79,7 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
   to_gia_cong: ["tổ gia công", "to gia cong"],
   tinh_trang_gia_cong: ["tình trạng gia công", "tinh trang gia cong"],
   so_luong_cau_kien: ["số lượng cấu kiện", "so luong cau kien"],
+  so_luong_con_lai: ["số lượng còn lại", "so luong con lai"],
   khoi_luong_ban_hanh: ["khối lượng ban hành", "khoi luong ban hanh"],
   khoi_luong_chua_gia_cong: [
     "khối lượng chưa gia công",
@@ -85,6 +87,8 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
   ],
   ngay_bat_dau: ["ngày bắt đầu", "ngay bat dau"],
   ngay_ket_thuc: ["ngày kết thúc", "ngay ket thuc"],
+  rap_tho_khoi_luong_con_lai: ["ráp thô / 2d", "rap tho / 2d", "rap tho/2d"],
+  han_tho_khoi_luong_con_lai: ["hàn thô / 2d", "han tho / 2d", "han tho/2d"],
 };
 
 function normalize(s: string): string {
@@ -127,23 +131,6 @@ function buildColumnMap(combined: string[]): Map<string, number> {
     if (bestCol !== -1) map.set(field, bestCol);
   }
   return map;
-}
-
-// The sheet has separate "RÁP THÔ/2D" and "HÀN THÔ/2D" blocks that repeat
-// the exact same sub-column labels ("Khối lượng CÒN LẠI"). Google's CSV
-// export drops merged group-header text on every column but the first, so
-// the group name isn't reliably attachable per column — instead we rely on
-// sheet order: Ráp thô's block always precedes Hàn thô's, so the first
-// "khối lượng còn lại" match is Ráp thô and the second is Hàn thô.
-function findAllColumns(combined: string[], mustInclude: string[]): number[] {
-  const found: number[] = [];
-  for (let col = 0; col < combined.length; col++) {
-    const normalized = normalize(combined[col]);
-    if (mustInclude.every((k) => normalized.includes(normalize(k)))) {
-      found.push(col);
-    }
-  }
-  return found;
 }
 
 function parseNumber(s: string | undefined): number | null {
@@ -196,9 +183,6 @@ export function mapSheetToRows(csvText: string): ParsedRow[] {
     return col === undefined ? undefined : r[col];
   };
 
-  const khoiLuongConLaiCols = findAllColumns(combined, ["khoi luong", "con lai"]);
-  const [rapThoCol, hanThoCol] = khoiLuongConLaiCols;
-
   const rawHeader = headerRows[0].map((h, i) => h || headerRows[1]?.[i] || `col_${i}`);
 
   const out: ParsedRow[] = [];
@@ -232,12 +216,13 @@ export function mapSheetToRows(csvText: string): ParsedRow[] {
       to_gia_cong: (get(r, "to_gia_cong") ?? "").trim() || null,
       tinh_trang_gia_cong: (get(r, "tinh_trang_gia_cong") ?? "").trim() || null,
       so_luong_cau_kien: parseNumber(get(r, "so_luong_cau_kien")),
+      so_luong_con_lai: parseNumber(get(r, "so_luong_con_lai")),
       khoi_luong_ban_hanh: parseNumber(get(r, "khoi_luong_ban_hanh")),
       khoi_luong_chua_gia_cong: parseNumber(get(r, "khoi_luong_chua_gia_cong")),
       ngay_bat_dau: parseDate(get(r, "ngay_bat_dau")),
       ngay_ket_thuc: parseDate(get(r, "ngay_ket_thuc")),
-      rap_tho_khoi_luong_con_lai: rapThoCol !== undefined ? parseNumber(r[rapThoCol]) : null,
-      han_tho_khoi_luong_con_lai: hanThoCol !== undefined ? parseNumber(r[hanThoCol]) : null,
+      rap_tho_khoi_luong_con_lai: parseNumber(get(r, "rap_tho_khoi_luong_con_lai")),
+      han_tho_khoi_luong_con_lai: parseNumber(get(r, "han_tho_khoi_luong_con_lai")),
       raw,
     });
   }

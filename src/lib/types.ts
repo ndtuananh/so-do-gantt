@@ -10,6 +10,7 @@ export type GanttItem = {
   to_gia_cong: string | null;
   tinh_trang_gia_cong: string | null;
   so_luong_cau_kien: number | null;
+  so_luong_con_lai: number | null;
   khoi_luong_ban_hanh: number | null;
   khoi_luong_chua_gia_cong: number | null;
   ngay_bat_dau: string | null; // ISO date

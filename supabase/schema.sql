@@ -12,6 +12,7 @@ create table if not exists gantt_items (
   to_gia_cong text,
   tinh_trang_gia_cong text,
   so_luong_cau_kien numeric,
+  so_luong_con_lai numeric,
   khoi_luong_ban_hanh numeric,
   khoi_luong_chua_gia_cong numeric,
   ngay_bat_dau date,

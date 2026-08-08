@@ -28,17 +28,35 @@ export async function runSync(): Promise<SyncResult> {
       );
     if (error) throw new Error(error.message);
 
+    // Mirror the Sheet exactly: a project row removed from the Sheet should
+    // disappear from the dashboard too, not linger as a stale entry.
+    const currentKeys = new Set(rows.map((r) => r.row_key));
+    const { data: existing } = await supabase.from("gantt_items").select("row_key");
+    const staleKeys = (existing ?? [])
+      .map((r) => r.row_key as string)
+      .filter((k) => !currentKeys.has(k));
+    let removed = 0;
+    if (staleKeys.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("gantt_items")
+        .delete()
+        .in("row_key", staleKeys);
+      if (!deleteError) removed = staleKeys.length;
+    }
+
     await supabase.from("sync_log").insert({
       synced_at,
       rows_upserted: rows.length,
       status: "ok",
-      message: null,
+      message: removed > 0 ? `Đã xoá ${removed} dòng không còn trong Sheet.` : null,
     });
 
     return {
       status: "ok",
       rows_upserted: rows.length,
-      message: `Đồng bộ thành công ${rows.length} dòng.`,
+      message:
+        `Đồng bộ thành công ${rows.length} dòng` +
+        (removed > 0 ? `, đã xoá ${removed} dòng không còn trong Sheet.` : "."),
       synced_at,
     };
   } catch (err) {
