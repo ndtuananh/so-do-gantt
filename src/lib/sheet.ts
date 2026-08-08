@@ -190,7 +190,10 @@ export function mapSheetToRows(csvText: string): ParsedRow[] {
       if (r[idx] !== undefined && r[idx] !== "") raw[h] = r[idx];
     });
 
-    const row_key = ma_code || `${stt ?? i}-${ten_du_an}-${hang_muc ?? ""}`;
+    // Absolute sheet row number as fallback identity — guaranteed unique per
+    // row (stt/ten_du_an/hang_muc can repeat when Sheet cells are merged).
+    const sheetRowNumber = headerIdx + 2 + i + 1;
+    const row_key = ma_code || `row-${sheetRowNumber}`;
 
     out.push({
       row_key,

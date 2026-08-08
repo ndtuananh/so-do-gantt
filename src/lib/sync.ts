@@ -6,11 +6,18 @@ export async function runSync(): Promise<SyncResult> {
   const synced_at = new Date().toISOString();
   try {
     const csv = await fetchSheetCsv();
-    const rows = mapSheetToRows(csv);
+    const parsedRows = mapSheetToRows(csv);
 
-    if (rows.length === 0) {
+    if (parsedRows.length === 0) {
       throw new Error("Không đọc được dòng dữ liệu nào từ Sheet.");
     }
+
+    // Defense in depth: a single upsert batch fails outright if two rows
+    // share the same conflict key (e.g. Sheet cells that produce identical
+    // fallback keys), so de-duplicate by row_key before sending.
+    const byRowKey = new Map<string, (typeof parsedRows)[number]>();
+    for (const row of parsedRows) byRowKey.set(row.row_key, row);
+    const rows = Array.from(byRowKey.values());
 
     const supabase = getSupabaseServerClient();
     const { error } = await supabase
