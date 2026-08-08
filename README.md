@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KHGC AH9 — Sơ đồ Gantt gia công
 
-## Getting Started
+Dashboard theo dõi tiến độ gia công các dự án tại Xưởng AH9, đồng bộ dữ liệu
+từ Google Sheet. Next.js (App Router) + Supabase + Vercel Cron.
 
-First, run the development server:
+## Kiến trúc
+
+- **Next.js 16** (App Router, TypeScript, Tailwind) — giao diện Server + Client Components.
+- **Supabase (Postgres)** — lưu dữ liệu đã đồng bộ trong bảng `gantt_items`, chỉ được truy cập
+  từ phía server (Server Components / Route Handlers) bằng secret key. Không key nào lộ ra trình duyệt.
+- **Google Sheet → CSV export** (`src/lib/sheet.ts`) — đọc dữ liệu công khai qua link export CSV,
+  tự nhận diện cột theo từ khóa tiêu đề (không phụ thuộc thứ tự cột).
+- **`/api/sync`** — route được gọi bởi Vercel Cron mỗi 30 phút (`vercel.json`), và bởi nút
+  "Đồng bộ ngay" trên giao diện (Server Action, `src/app/actions.ts`).
+
+## Việc cần làm 1 lần để chạy được (không thể tự động hoá vì cần quyền của bạn)
+
+1. **Tạo bảng trong Supabase**: mở SQL Editor trong dashboard Supabase, dán và chạy nội dung
+   `supabase/schema.sql`. (Tùy chọn: chạy thêm `supabase/seed_demo.sql` để xem giao diện có
+   dữ liệu minh hoạ ngay, có thể xoá bất cứ lúc nào.)
+2. **Chia sẻ Google Sheet công khai xem**: File > Chia sẻ > "Bất kỳ ai có đường liên kết" > Người xem.
+   Không cần Service Account — sync đọc qua link export CSV công khai.
+3. **Khai báo biến môi trường trên Vercel** (Project Settings > Environment Variables), xem
+   `.env.example` để biết danh sách đầy đủ:
+   - `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
+   - `SHEET_ID`, `SHEET_GID`
+   - `CRON_SECRET` (tuỳ chọn, chặn người ngoài gọi `/api/sync`)
+
+## Phát triển local
 
 ```bash
+npm install
+cp .env.example .env.local   # điền giá trị thật
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+```
